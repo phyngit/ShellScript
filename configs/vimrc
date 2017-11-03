@@ -1,0 +1,31 @@
+" custom configuration start
+set encoding=utf-8              " specify encoding
+set fileformats=unix,dos,mac    " specify file formats
+syntax enable                   " enable syntax highlighting
+syntax on                       " syntax highlight
+"set nu                         " show line number on left, nu/nonu
+set ai                          " set autoindent ,set auto indent
+set si                          " set smartindent, set smart indent
+set wrap                        " set line wrap
+set smarttab                    " be smart when using tabs
+set tabstop=4
+set softtabstop=4               " 1 tab == 4 spaces
+set shiftwidth=4
+set backspace=2
+set paste                       " (*)turning off auto indent when pasting text into vim， paste/nopaste
+set nobackup                    " disable auto backup
+set nowb
+set noswapfile
+set autoread                    " auto read when file is changed from the outside
+set noignorecase                " ignore case when searching, ignorecase/noignorecase
+set smartcase                   " enable smart-case search
+set hlsearch                    " highlight search results, hlsearch/nohlsearch
+set incsearch                   " searches for strings incrementally
+set undolevels=1000	        "number of undo levels
+set backspace=eol,start,indent  "backspace behaviour
+"set fileformat                 " check file format
+"set list                       " check hidden character, list/nolist
+set ruler	                " show row and column ruler information
+
+command W :execute ':silent w !sudo tee % > /dev/null' | :edit!
+" custom configuration end

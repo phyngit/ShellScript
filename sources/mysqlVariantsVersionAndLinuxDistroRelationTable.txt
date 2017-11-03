@@ -1,0 +1,47 @@
+MySQL|el7|8.0 5.7 5.6 5.5|rhel centos
+MySQL|el6|8.0 5.7 5.6 5.5|rhel centos
+MySQL|el5|5.7 5.6|rhel centos
+MySQL|fc26|8.0 5.7|fedora
+MySQL|fc25|8.0 5.7|fedora
+MySQL|fc24|8.0 5.7 5.6|fedora
+MySQL|sles12|8.0 5.7 5.6|sles
+MySQL|sles11|5.7 5.6 5.5|sles
+MySQL|wheezy|5.7 5.6|debian
+MySQL|jessie|8.0 5.7 5.6|debian
+MySQL|stretch|8.0 5.7 5.6|debian
+MySQL|precise|5.7 5.6|ubuntu
+MySQL|trusty|8.0 5.7 5.6|ubuntu
+MySQL|xenial|8.0 5.7|ubuntu
+MySQL|yakkety|8.0 5.7|ubuntu
+MySQL|zesty|8.0 5.7|ubuntu
+MariaDB|zesty|10.3 10.2 10.1|ubuntu
+MariaDB|yakkety|10.3 10.1 10.0|ubuntu
+MariaDB|xenial|10.3 10.2 10.1 10.0|ubuntu
+MariaDB|wheezy|10.3 10.2 10.1 10.0 5.5|debian
+MariaDB|trusty|10.3 10.2 10.1 10.0 5.5|ubuntu
+MariaDB|stretch|10.3 10.2 10.1|debian
+MariaDB|sid|10.3 10.2 10.1|debian
+MariaDB|rhel7|10.3 10.2 10.1 10.0 5.5|rhel
+MariaDB|rhel6|10.3 10.2 10.1 10.0 5.5|rhel
+MariaDB|precise|10.1 10.0 5.5|ubuntu
+MariaDB|opensuse42|10.3 10.2 10.1|opensuse
+MariaDB|jessie|10.3 10.2 10.1 10.0|debian
+MariaDB|fedora26|10.3 10.2|fedora
+MariaDB|fedora25|10.3 10.2 10.1|fedora
+MariaDB|fedora24|10.2 10.1|fedora
+MariaDB|fedora23|10.1|fedora
+MariaDB|centos7|10.3 10.2 10.1 10.0 5.5|centos
+MariaDB|centos6|10.3 10.2 10.1 10.0 5.5|centos
+Percona|jessie|5.7 5.6 5.5|debian
+Percona|lucid|5.1|ubuntu
+Percona|precise|5.1|ubuntu
+Percona|rhel5|5.1|rhel centos
+Percona|rhel6|5.7 5.6 5.5 5.1|rhel centos
+Percona|rhel7|5.7 5.6 5.5|rhel centos
+Percona|squeeze|5.1|debian
+Percona|stretch|5.7 5.6 5.5|debian
+Percona|trusty|5.7 5.6 5.5|ubuntu
+Percona|wheezy|5.7 5.6 5.5|debian
+Percona|xenial|5.7 5.6 5.5|ubuntu
+Percona|yakkety|5.7 5.6 5.5|ubuntu
+Percona|zesty|5.7 5.6 5.5|ubuntu
