@@ -5,7 +5,7 @@
 This project is a collection of Shell Scripts written by myself, every script has a specific purpose. Its topics consist of **System Info Detection**, **System Post-installation Initialization**, **Software Installation & Configuration**, **Personal Gadgets**. I strive to increase the compatibility with mainstream GNU/Linux distributions, e.g. [RHEL][rhel]/[CentOS][centos]/[Fedora][fedora], [Debian][debian]/[Ubuntu][ubuntu], [SLES][sles]/[OpenSUSE][opensuse]。
 
 
-<!-- ## Table Of Contents -->
+## Table Of Contents
 1. [Documentation](#documentation)  
 1.1 [Help Info](#help-info)  
 2. [GNU/Linux](#gnulinux)  
