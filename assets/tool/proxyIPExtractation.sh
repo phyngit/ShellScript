@@ -5,12 +5,13 @@ set -o pipefail #Return return code in pipeline fails
 
 #Target: Extract Proxy IP From Proxy Site On GNU/Linux
 #Writer: MaxdSre:
-#Date: Oct 10, 2017 15:04 Fri +0800
+#Date: Nov 06, 2017 13:04 Mon +0800
 #Update Time:
 # - Jun 13, 2017 09:54 Tue +0800
 # - June 23, 2017 11:29 Fri +0800
 # - July 24, 2017 16:34 Mon +0800
 # - Aug 04, 2017 15:15 Fri +0800
+# - Oct 10, 2017 15:04 Fri +0800
 
 #########  0-1. Singal Setting  #########
 mktemp_format=${mktemp_format:-'PIETemp_XXXXX'}
@@ -41,8 +42,7 @@ protocol_type=${protocol_type:-}
 anonymity_type=${anonymity_type:-}
 proxy_server=${proxy_server:-}
 use_proxy=${use_proxy:-0}
-user_agent=${user_agent:-'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3200.0 Iron Safari/537.36'}
-real_country=${real_country:-}
+user_agent=${user_agent:-'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3200.75 Safari/537.36'}
 
 strict_speed_test=${strict_speed_test:-0}
 curl_speed_time=${curl_speed_time:-1}     #time second -y, --speed-time <time>   must integer
@@ -197,16 +197,17 @@ done
 
 proxy_site_info=$(mktemp -t "${mktemp_format}")
 cat > "${proxy_site_info}" <<EOF
-No|Site|CN|socks4|socks5|transparent|anonymous|high-anonymous(elite)|Site
-1|Premium Proxy|1|1|1|1|0|1|https://premproxy.com
-2|Nntime|1|0|0|1|1|1|http://nntime.com
-3|Didsoft|0|1|1|1|1|1|https://free-proxy-list.net/
-4|PROXYS™|1|0|0|1|0|1|http://www.proxys.com.ar
-5|Proxz|0|0|0|0|0|1|http://www.proxz.com
-6|ProxyNova|0|0|0|1|0|1|https://www.proxynova.com
-7|Daily Proxy|0|0|0|1|0|1|http://www.dailyproxylists.com
-# 8|HideMyAss|0|0|0|1|1|1|http://proxylist.hidemyass.com
-# 9|freeproxylists.net|0|0|0|1|1|1|http://freeproxylists.net/ 暫未實現通過curl抓取
+No|Site|socks4|socks5|transparent|anonymous|high-anonymous(elite)|Site
+1|Premium Proxy|1|1|1|0|1|https://premproxy.com
+2|Didsoft|1|1|1|1|1|https://free-proxy-list.net/
+3|Gather Proxy|1|1|1|1|1|http://www.gatherproxy.com
+4|My Proxy|1|1|1|1|1|https://www.my-proxy.com
+5|Nntime|0|0|1|1|1|http://nntime.com
+6|PROXYS|0|0|1|0|1|http://www.proxys.com.ar
+7|Proxz|0|0|0|0|1|http://www.proxz.com
+8|ProxyNova|0|0|1|0|1|https://www.proxynova.com
+9|Daily Proxy|0|0|1|0|1|http://www.dailyproxylists.com
+# 10|freeproxylists.net|0|0|1|1|1|http://freeproxylists.net/
 EOF
 
 
@@ -224,7 +225,7 @@ proxy_ip_extracted=$(mktemp -t "${mktemp_format}")
 
 #########  3-1. Premium Proxy (https://premproxy.com)  #########
 # HTTP: transparent, anonymous, elite
-funcProxySite_1(){
+funcPremiumProxy(){
     # IP:Port|AnonymityLevel|Country|City|ISP
     local page_url='https://premproxy.com/list/'
     local page_no
@@ -242,28 +243,89 @@ funcProxySite_1(){
 }
 
 # SOCKS: socks4, socks5
-funcProxySite_1_socks(){
+funcPremiumProxySocks(){
     # IP:Port|AnonymityLevel|Country|City|ISP
+    # 73.208.67.207:47413|socks4|United States|Chicago (IL)|Comcast Cable
+    # 67.197.245.100:20716|socks5|United States|Clover (SC)|Comporium
+
     local page_url='https://premproxy.com/socks-list/'
     local page_no
     page_no=$($download_tool "${page_url}" | sed -r -n '1,/pagination/{/pagination/{s@next@@g;s@[[:space:]]*<[^>]*>[[:space:]]*@ @g;s@[[:space:]]+@ @g;s@.*[[:space:]]+([[:digit:]]+)[[:space:]]*$@\1@g;p}}')
 
-    # page_no=$($download_tool "${page_url}" | sed -r -n '/next/{s@<[^>]*>@ @gp}' | awk '{print $(NF-1)}')
+    if [[ -z "${page_no}" ]]; then
+        echo -e "Fail to extract page No. of site ${c_blue}${page_url}${c_normal}"
+    else
+        local flag
+        flag=${flag:-"${page_no}"}
+        [[ "${page_no}" -ge 10 ]] && flag=9
 
-    local flag
-    flag=${flag:-"${page_no}"}
-    [[ "${page_no}" -ge 10 ]] && flag=9
+        seq -f 0%g 1 "${flag}" | parallel -k -j 0 -X $download_tool "${page_url}"{}.htm 2> /dev/null | sed -r -n '/<tbody/,/<\/tbody/{/<tr/{s@<dfn title="([^"]*)">[^<]*<@\1<@g;s@[[:space:]]*<\/td>[[:space:]]*@|@g;s@[[:space:]]*<[^>]*>[[:space:]]*@@g;s@&nbsp;@@g;p}}' | awk -F\| 'BEGIN{OFS="|"}{print $1,tolower($2),$4,$5,$6}' >> "${proxy_ip_extracted}"
 
-    seq -f 0%g 1 "${flag}" | parallel -k -j 0 -X $download_tool "${page_url}"{}.htm 2> /dev/null | sed -r -n '/<tbody/,/<\/tbody/{/<tr/{s@<dfn title="([^"]*)">[^<]*<@\1<@g;s@[[:space:]]*<\/td>[[:space:]]*@|@g;s@[[:space:]]*<[^>]*>[[:space:]]*@@g;s@&nbsp;@@g;p}}' | awk -F\| 'BEGIN{OFS="|"}{print $1,tolower($2),$4,$5,$6}' >> "${proxy_ip_extracted}"
+        if [[ "${page_no}" -ge 10 ]]; then
+            seq 10 "${page_no}" | parallel -k -j 0 -X $download_tool "${page_url}"{}.htm 2> /dev/null | sed -r -n '/<tbody/,/<\/tbody/{/<tr/{s@<dfn title="([^"]*)">[^<]*<@\1<@g;s@[[:space:]]*<\/td>[[:space:]]*@|@g;s@[[:space:]]*<[^>]*>[[:space:]]*@@g;s@&nbsp;@@g;p}}' | awk -F\| 'BEGIN{OFS="|"}{print $1,tolower($2),$4,$5,$6}' >> "${proxy_ip_extracted}"
+        fi    # end if page_no
 
-    if [[ "${page_no}" -ge 10 ]]; then
-        seq 10 "${page_no}" | parallel -k -j 0 -X $download_tool "${page_url}"{}.htm 2> /dev/null | sed -r -n '/<tbody/,/<\/tbody/{/<tr/{s@<dfn title="([^"]*)">[^<]*<@\1<@g;s@[[:space:]]*<\/td>[[:space:]]*@|@g;s@[[:space:]]*<[^>]*>[[:space:]]*@@g;s@&nbsp;@@g;p}}' | awk -F\| 'BEGIN{OFS="|"}{print $1,tolower($2),$4,$5,$6}' >> "${proxy_ip_extracted}"
     fi
 }
 
-#########  3-2. Nntime (http://nntime.com)  #########
+
+#########  3-2. Didsoft (https://free-proxy-list.net)  #########
 # HTTP: transparent, anonymous, high-anonymous
-funcProxySite_2(){
+
+# Free Proxy List | https://free-proxy-list.net
+# Anonymous Proxy | https://free-proxy-list.net/anonymous-proxy.html
+# US Proxy | https://www.us-proxy.org
+# SSL (HTTPS) Proxy | https://www.sslproxies.org
+
+funcDidsoft(){
+    # IP:Port|AnonymityLevel|Country|Https
+    local proxy_site_list
+proxy_site_list=$(cat <<EOF
+Free Proxy List|https://free-proxy-list.net
+Anonymous Proxy|https://free-proxy-list.net/anonymous-proxy.html
+US Proxy|https://www.us-proxy.org
+SSL (HTTPS) Proxy|https://www.sslproxies.org
+EOF
+)
+
+    echo "${proxy_site_list}" | awk -F\| '{print $2}' |  parallel -k -j 0 -X $download_tool {} 2> /dev/null | sed -r -n '/<tbody>/{s@^.*<tbody>@@g;s@<\/tbody>.*$@@g;s@<\/tr>@\n@g;s@<\/td>@|@g;s@<[^>]*>@@g;s@elite proxy@elite@g;p}' | awk -F\| 'NF>0{printf("%s:%s|%s|%s|%s\n",$1,$2,tolower($5),$4,tolower($7))}' >> "${proxy_ip_extracted}"
+}
+
+
+funcDidsoftSocks(){
+    # IP:Port|AnonymityLevel|Country|Https
+    # 146.115.138.174:33042|socks5|United States|yes
+
+    local page_url='https://www.socks-proxy.net'
+
+    $download_tool "${page_url}" | sed -r -n '/<tbody>/{s@^.*<tbody>@@g;s@<\/tbody>.*$@@g;s@<\/tr>@\n@g;s@<\/td>@|@g;s@<[^>]*>@@g;s@elite proxy@elite@g;p}' | awk -F\| 'NF>0{printf("%s:%s|%s|%s|%s\n",$1,$2,tolower($5),$4,tolower($7))}' >> "${proxy_ip_extracted}"
+}
+
+
+#########  3-3. Gather Proxy (http://www.gatherproxy.com)  #########
+funcGatherProxySocks(){
+    # IP:Port|AnonymityLevel|Country
+    # 167.88.90.9:64849|socks5|United States
+
+    local page_url='http://www.gatherproxy.com/sockslist'
+
+    $download_tool "${page_url}" | sed -r -n '/^<\/div><\/td>/,/<\/table>/{/^$/d;s@^[[:space:]]*@@g;s@'\''@@g;s@[[:space:]]*(<[^>]+>)[[:space:]]*@\1@g;p}' | sed ':a;N;$!ba;s@\n@@g' | sed -r -n 's@SOCK[^<]*<\/td>@&\n@g;s@<\/td>@|&@g;s@document.write\(([^)]*)\)@\1@g;s@<[^>]+>@@g;s@4\/5@4@g;s@SOCK@socks@g;p' | awk -F\| '$2!=""{printf("%s:%s|%s|%s\n",$3,$4,tolower($7),$5)}' >> "${proxy_ip_extracted}"
+}
+
+#########  3-4. My Proxy (  #########
+funcMyProxySocks(){
+    # IP:Port|AnonymityLevel|Country
+    # 216.215.124.166:15806|socks5|US
+
+    local page_url='https://www.my-proxy.com/free-socks-5-proxy.html'
+
+    $download_tool "${page_url}" | sed -r 's@<\/div>@&\n@g' | sed -r -n '/<div class="list">/!d;s@<br>@\n@g;s@<[^>]*>@@g;s@#@|@g;p' | awk -F\| -v socks='socks5' 'NF>0{printf("%s|%s|%s\n",$1,socks,$2)}' >> "${proxy_ip_extracted}"
+}
+
+
+#########  3-5. Nntime (http://nntime.com)  #########
+# HTTP: transparent, anonymous, high-anonymous
+funcNntime(){
     # IP:Port|AnonymityLevel|Country|City|ISP
     local page_url='http://nntime.com/'
     local page_no
@@ -282,45 +344,17 @@ funcProxySite_2(){
 }
 
 
-#########  3-3. Didsoft (https://free-proxy-list.net)  #########
-# HTTP: transparent, anonymous, high-anonymous
-
-# Free Proxy List | https://free-proxy-list.net
-# Anonymous Proxy | https://free-proxy-list.net/anonymous-proxy.html
-# US Proxy | https://www.us-proxy.org
-# SSL (HTTPS) Proxy | https://www.sslproxies.org
-
-funcProxySite_3(){
-    # IP:Port|AnonymityLevel|Country|Https
-    local proxy_site_list
-proxy_site_list=$(cat <<EOF
-Free Proxy List|https://free-proxy-list.net
-Anonymous Proxy|https://free-proxy-list.net/anonymous-proxy.html
-US Proxy|https://www.us-proxy.org
-SSL (HTTPS) Proxy|https://www.sslproxies.org
-EOF
-)
-
-    echo "${proxy_site_list}" | awk -F\| '{print $2}' |  parallel -k -j 0 -X $download_tool {} 2> /dev/null | sed -r -n '/<tbody>/{s@^.*<tbody>@@g;s@<\/tbody>.*$@@g;s@<\/tr>@\n@g;s@<\/td>@|@g;s@<[^>]*>@@g;s@elite proxy@elite@g;p}' | awk -F\| 'NF>0{printf("%s:%s|%s|%s|%s\n",$1,$2,tolower($5),$4,tolower($7))}' >> "${proxy_ip_extracted}"
-}
-
-# SOCKS: socks4, socks5
-funcProxySite_3_socks(){
-    $download_tool https://www.socks-proxy.net | sed -r -n '/<tbody>/{s@^.*<tbody>@@g;s@<\/tbody>.*$@@g;s@<\/tr>@\n@g;s@<\/td>@|@g;s@<[^>]*>@@g;s@elite proxy@elite@g;p}' | awk -F\| 'NF>0{printf("%s:%s|%s|%s|%s\n",$1,$2,tolower($5),$4,tolower($7))}' >> "${proxy_ip_extracted}"
-}
-
-
-#########  3-4. PROXYS™ (http://www.proxys.com.ar)  #########
+#########  3-6. PROXYS™ (http://www.proxys.com.ar)  #########
 # HTTP: transparente, elite
-funcProxySite_4(){
+funcPROXYS(){
     # IP:Port|AnonymityLevel|Country
     local page_url='http://www.proxys.com.ar/'
     $download_tool "${page_url}" | sed -r -n '/st-tables-page/{s@<\/tr>@\n@g;p}' | sed -r -n '/td/!d;s@<a href=.*$@@g;s@<\/td>@|@g;s@[[:space:]]*<[^>]+>[[:space:]]*@@g;p' | awk -F\| '{printf("%s:%s|%s|%s\n",$1,$2,tolower($4),$3)}' >> "${proxy_ip_extracted}"
 }
 
 
-#########  3-5. Proxz (http://www.proxz.com)  #########
-funcProxySite_5(){
+#########  3-7. Proxz (http://www.proxz.com)  #########
+funcProxz(){
     # IP:Port|AnonymityLevel|Country
     local page_url='http://www.proxz.com/'
     page_no=$($download_tool --user-agent "\"${user_agent}\"" "${page_url}proxy_list_high_anonymous_0_ext.html" | sed -r -n '1,/Proxylist.*::../{/Proxylist/{s@(<[^>]*>|::..)@@g;s@.*:([[:digit:]]+)$@\1@g;p}}')
@@ -332,54 +366,24 @@ funcProxySite_5(){
 }
 
 
-#########  3-6. ProxyNova (https://www.proxynova.com)  #########
+#########  3-8. ProxyNova (https://www.proxynova.com)  #########
 # HTTP: transparent, elite
-funcProxySite_6(){
+funcProxyNova(){
     # IP:Port|AnonymityLevel|Country|City
     local page_url='https://www.proxynova.com/proxy-server-list/'
     $download_tool "${page_url}"| sed -r -n '/<center>/,/<\/center>/d;/<tbody>/,/<\/tbody>/{s@<\/?(tbody|images|script|a|time|img|div|ins)[[:space:]]*[^>]*>@@g;s@<(td|span)[[:space:]]*[^>]*>@@g;s@^[[:blank:]]*@@g;s@<tr>@@g;p}' | sed -r '/^$/d' | awk '{if($0!~/<\/tr>/){ORS=" ";print $0}else{printf "\n"}}' | sed -r -n "s@<\/span>@@g;s@(document.write|substr\(2\)|\(|\)|'|;|[[:space:]]*\+[[:space:]]*)@@g;s@(<\/td>)@|@g;s@\.{1,}@\.@g;s@^23@@g;p" | awk -F\| '{printf("%s:%s|%s|%s\n",$1,$2,tolower($7),$6)}' | sed -r -n 's@-@|@g;s@[[:space:]]+(|)[[:space:]]+@\1@g;s@: @:@g;p' | sed -r "/^[^[:digit:]]/d;s@(|)[[:space:]]*@\1@g" >> "${proxy_ip_extracted}"
 }
 
-#########  3-7. Daily Proxy (http://www.dailyproxylists.com)  #########
+#########  3-9. Daily Proxy (http://www.dailyproxylists.com)  #########
 # HTTP: transparent, high-anonymous
-funcProxySite_7(){
+funcDailyProxy(){
     # IP:Port|AnonymityLevel|Country
     local page_url='http://www.dailyproxylists.com/index.php/proxy-lists'
     $download_tool "${page_url}" | sed -r -n '/document.write/{s@<[^>]*>@@g;s@(document.write|unescape|\(|\)|\")@@g;s@^[[:space:]]*@@g;p}' | sed -r -n 's@^[[:blank:]]*@@g;s@[[:blank:]]$@@g;p' | sed 's@\\@\\\\@g;s@\(%\)\([0-9a-fA-F][0-9a-fA-F]\)@\\x\2@g' | printf $(cat -) | sed -r -n 's@<\/?tr>@\n@g;s@<(td)[[:space:]]*[^>]*>@@g;p' | sed -r -n '/^[^[:digit:]]+/d;/^$/d;s@<[^>]*>@|@g;p' |  awk -F\| '{printf("%s:%s|%s|%s\n",$1,$2,tolower($4),$3)}' >> "${proxy_ip_extracted}"
 }
 
-#########  3-8. HideMyAss (http://proxylist.hidemyass.com)  #########
-# HTTP: high-anonymous
 
-# This service has been suspended due changes in our infrastructure. But we'll be back with an even better version in a few months!
-
-funcProxySite_8(){
-    local page_url='http://proxylist.hidemyass.com/search-1303043#listable'
-    local start=1
-    proxy_list_html=$(mktemp -t tempXXXXX.txt)
-    tempfile_perip=$(mktemp -t tempXXXXX.txt)
-
-    $download_tool "${page_url}" | sed -r -n '/table section/,/table section end/{/^$/d;/indicator/d;s@^[[:space:]]*@@;/^<[\/]?(td|div|span)>$/d;p}' | sed -r -n '/leftborder/,/<\/tr>/{p}' > "${proxy_list_html}"
-
-    sed -n '/<\/tr>/=' "${proxy_list_html}" | while read -r line;do
-        # echo "start $start, end $line";
-        sed -r -n ''"${start},${line}"'p' "${proxy_list_html}" > "${tempfile_perip}"
-        country=$(sed -r -n '/img src=/{n;s@<[^>]*>@@p}' "${tempfile_perip}" | sed -r -n 's@^[[:space:]]*@@g;s@[[:space:]]*$@@g;p')
-        port=$(sed -r -n '/class=\"country\"/{x;s@<[^>]*>@@p};h' "${tempfile_perip}" | sed -r -n 's@^[[:space:]]*@@g;s@[[:space:]]*$@@g;p')
-        class_none_list=$(sed -r -n '/^\..*none/s@.(.*)\{.*@\1@p' "${tempfile_perip}" | awk 'BEGIN{RS=EOF}{gsub(/\n/,"|");print}')
-        ip=$(sed -r -n '/^<\/style/{s@<\/[^>]*>@\n@g;p}' "${tempfile_perip}" | sed -r 's@\.@@g' | sed -r -n 's@^([[:digit:]]+)(<.*)$@\1\n\2@;p' | sed -r -n '/^$/d;/(none|\.)/!p' | sed -r -n '/('"${class_none_list}"')/d;s@<[^>]*>@@;/^$/d;p' | awk 'BEGIN{RS=EOF}{gsub(/\n/," ");print}' | awk '{printf("%s.%s.%s.%s",$1,$2,$3,$4)}')
-
-        echo "$ip:$port|high-anonymous|$country" >> "${proxy_ip_extracted}"
-
-        start=$((line+1));
-    done
-
-    [[ -f "${proxy_list_html:-}" ]] && rm -f "${proxy_list_html}"
-    [[ -f "${tempfile_perip:-}" ]] && rm -f "${tempfile_perip}"
-}
-
-
-#########  3. Executing Process  #########
+#########  4. Executing Process  #########
 funcCountryShortName(){
     # http://fasteri.com/list/2/short-names-of-countries-and-iso-3166-codes
     # curl -fsL http://fasteri.com/list/2/short-names-of-countries-and-iso-3166-codes | sed -r -n '/^<td>/{N;s@\n@@g;s@<\/a>@|@g;s@<[^>]*>@@g;p}'
@@ -427,7 +431,7 @@ funcSpecificProxyIPTesting(){
         flag=${flag:-1}
     fi
 
-    if [[ "${flag}" -eq 1 ]]; then
+    if [[ "${flag}" -eq 1 && -n "${country}" ]]; then
         # https://superuser.com/questions/769541/is-it-possible-to-ping-an-addressport
         # - check ip:port if is open or not, too consume time, not use
         # -n $(nc -znv "${ip_val}" "${port_val}" 2>&1 | sed -r -n '/open$/p')
@@ -455,15 +459,20 @@ funcSpecificProxyIPTesting(){
             esac
 
             if [[ -n $($curl_speed_test ipinfo.io/country 2> /dev/null) ]]; then
+                # Korea, Republic of
+                [[ "${country}" =~ 'Korea' ]] && country='Korea'
+                # Russian Federation
+                [[ "${country}" =~ 'Russian' ]] && country='Russia'
+
                 # the order of fields will affects command 'sort' used in func funcProxyIPExtraction
                 if [[ "${show_details}" -eq 1 ]]; then
                     echo "${ip_addr}|${country}|${city}|${isp}|${rtt_latency}"
                 else
                     echo "${country}|${rtt_latency}|${ip_addr}"
-                fi
-            fi
+                fi   # end if show_details
+            fi    # end if curl_speed_test
 
-        fi
+        fi    # end if rtt_latency
 
     fi
 }
@@ -477,31 +486,19 @@ funcProxyIPExtraction(){
         socks5 ) protocol_type='socks5' ;;
         * ) protocol_type='socks5' ;;
     esac
-    real_country=$($download_tool_origin ipinfo.io/country)
 
-    if [[ "${real_country}" == 'CN' ]]; then
-        if [[ "${protocol_type}" =~ ^socks ]]; then
-            funcProxySite_1_socks
-        else
-            if [[ "${proxy_site_specify}" -gt 0 && "${proxy_site_specify}" -le 3 ]]; then
-                funcProxySite_"${proxy_site_specify}"
-            else
-                funcProxySite_1
-                funcProxySite_2
-                funcProxySite_3
-            fi
-
-        fi
+    if [[ "${protocol_type}" =~ ^socks ]]; then
+        funcPremiumProxySocks
+        funcDidsoftSocks
+        funcGatherProxySocks
+        funcMyProxySocks
     else
-        if [[ "${protocol_type}" =~ ^socks ]]; then
-            funcProxySite_1_socks
-            funcProxySite_3_socks
+        local site_name_specified=${site_name_specified:-}
+        site_name_specified=$(awk -F\| 'match($1,/^[[:digit:]]*$/)&&$1=='"${proxy_site_specify}"'{gsub(" ","",$2); print $2}' "${proxy_site_info}")
+        if [[ -n "${site_name_specified}" ]]; then
+            func"${site_name_specified}"
         else
-            if [[ "${proxy_site_specify}" -gt 0 && "${proxy_site_specify}" -le 9 ]]; then
-                funcProxySite_"${proxy_site_specify}"
-            else
-                funcProxySite_1
-            fi
+            funcPremiumProxy
         fi
     fi
 
@@ -560,7 +557,7 @@ funcProxyIPExtraction(){
 }
 
 
-#########  4. Executing Process  #########
+#########  5. Executing Process  #########
 funcInitializationCheck
 funcInternetConnectionCheck
 funcDownloadToolCheck
@@ -568,7 +565,7 @@ funcDownloadToolCheck
 funcProxyIPExtraction
 
 
-#########  5. EXIT Singal Processing  #########
+#########  6. EXIT Singal Processing  #########
 # trap "commands" EXIT # execute command when exit from shell
 funcTrapEXIT(){
     unset list_proxy_sites
@@ -581,7 +578,6 @@ funcTrapEXIT(){
     unset proxy_server
     unset use_proxy
     unset user_agent
-    unset real_country
     unset strict_speed_test
     unset curl_speed_time
     unset curl_speed_limit
