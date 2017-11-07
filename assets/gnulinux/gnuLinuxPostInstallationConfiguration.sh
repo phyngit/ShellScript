@@ -1501,7 +1501,7 @@ funcOperationTimeCost(){
 
     case "${pack_manager}" in
         dnf|yum )
-            remove_old_kernel="${pack_manager} remove \$(rpm -qa | grep ^kernel | grep -v \$(uname -r))"
+            remove_old_kernel="${pack_manager} remove \$(rpm -qa | awk -v verinfo=\$(uname -r) 'BEGIN{gsub(\".?el[0-9].*$\",\"\",verinfo)}match(\$0,/^kernel/){if(\$0!~verinfo) print \$0}')"
             ;;
         apt-get )
             remove_old_kernel="${pack_manager} purge \$(dpkg -l | awk -v verinfo=\$(uname -r) 'match(\$0,/linux-image-/){if(\$2!~verinfo) print \$2}')"
